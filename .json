@@ -1,0 +1,245 @@
+{
+  "dns": {
+    "queryStrategy": "UseIPv4",
+    "servers": [
+      "https://8.8.8.8/dns-query"
+    ]
+  },
+  "inbounds": [
+    {
+      "listen": "127.0.0.1",
+      "port": 10808,
+      "protocol": "socks",
+      "settings": {
+        "auth": "noauth",
+        "udp": true
+      },
+      "sniffing": {
+        "destOverride": [
+          "http",
+          "tls",
+          "fakedns"
+        ],
+        "enabled": true,
+        "routeOnly": false
+      },
+      "tag": "socks"
+    },
+    {
+      "listen": "127.0.0.1",
+      "port": 10809,
+      "protocol": "http",
+      "settings": {
+        "auth": "noauth"
+      },
+      "sniffing": {
+        "destOverride": [
+          "http",
+          "tls",
+          "fakedns"
+        ],
+        "enabled": true,
+        "routeOnly": false
+      },
+      "tag": "http"
+    }
+  ],
+  "log": {
+    "access": "/path/to/logs/access",
+    "dnsLog": true,
+    "loglevel": "Warning"
+  },
+  "outbounds": [
+    {
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "example.com",
+            "port": 443,
+            "users": [
+              {
+                "alterId": 0,
+                "email": "user@example.com",
+                "encryption": "none",
+                "flow": "xtls-rprx-vision",
+                "id": "00000000-0000-0000-0000-000000000000",
+                "security": "auto"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "realitySettings": {
+          "fingerprint": "chrome",
+          "publicKey": "EXAMPLE_PUBLIC_KEY",
+          "serverName": "example.com",
+          "show": false
+        },
+        "security": "reality"
+      },
+      "tag": "proxy"
+    },
+    {
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "example.com",
+            "port": 443,
+            "users": [
+              {
+                "alterId": 0,
+                "email": "user@example.com",
+                "encryption": "none",
+                "flow": "xtls-rprx-vision",
+                "id": "00000000-0000-0000-0000-000000000000",
+                "security": "auto"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "realitySettings": {
+          "fingerprint": "chrome",
+          "publicKey": "EXAMPLE_PUBLIC_KEY",
+          "serverName": "example.com",
+          "show": false
+        },
+        "security": "reality"
+      },
+      "tag": "youtube-proxy"
+    },
+    {
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "example.com",
+            "port": 443,
+            "users": [
+              {
+                "alterId": 0,
+                "email": "user@example.com",
+                "encryption": "none",
+                "flow": "xtls-rprx-vision",
+                "id": "00000000-0000-0000-0000-000000000000",
+                "security": "auto"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "realitySettings": {
+          "fingerprint": "chrome",
+          "publicKey": "EXAMPLE_PUBLIC_KEY",
+          "serverName": "example.com",
+          "show": false
+        },
+        "security": "reality"
+      },
+      "tag": "tiktok-proxy"
+    },
+    {
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "example.com",
+            "port": 443,
+            "users": [
+              {
+                "alterId": 0,
+                "email": "user@example.com",
+                "encryption": "none",
+                "flow": "xtls-rprx-vision",
+                "id": "00000000-0000-0000-0000-000000000000",
+                "security": "auto"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "realitySettings": {
+          "fingerprint": "chrome",
+          "publicKey": "EXAMPLE_PUBLIC_KEY",
+          "serverName": "example.com",
+          "show": false
+        },
+        "security": "reality"
+      },
+      "tag": "uk-proxy"
+    },
+    {
+      "domainStrategy": "ForceIPv4",
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "block"
+    }
+  ],
+  "remarks": "Example Config",
+  "routing": {
+    "domainStrategy": "IPIfNonMatch",
+    "rules": [
+      {
+        "domain": [
+          "domain:example.com"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "domain:example.com"
+        ],
+        "outboundTag": "proxy"
+      },
+      {
+        "domain": [
+          "domain:example.com"
+        ],
+        "outboundTag": "tiktok-proxy"
+      },
+      {
+        "domain": [
+          "domain:example.com"
+        ],
+        "outboundTag": "uk-proxy"
+      },
+      {
+        "domain": [
+          "geosite:youtube"
+        ],
+        "outboundTag": "youtube-proxy"
+      },
+      {
+        "ip": [
+          "geoip:ru",
+          "geoip:private"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "domain": [
+          "domain:example.com"
+        ],
+        "outboundTag": "direct"
+      },
+      {
+        "network": "tcp,udp",
+        "outboundTag": "proxy",
+        "type": "field"
+      }
+    ]
+  }
+}
