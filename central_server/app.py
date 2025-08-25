@@ -4,6 +4,7 @@
 """
 
 import os
+from central_server.web.utils import keys
 import uvicorn
 from contextlib import asynccontextmanager
 from typing import List, Dict, Any
@@ -13,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
 from db.database import lifespan_manager
-from web.handlers import api, stats, keys
+from web.handlers import api, stats
 from web.schemas import HeartbeatResponse, ServerStatsResponse
 
 
