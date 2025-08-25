@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN Серверы - Статистика в реальном времени</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@2.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <!-- Font Awesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .dashboard-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .navigation {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+        
+        .nav-link:hover {
+            color: white;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            margin-bottom: 1.5rem;
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .card-header {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-bottom: 2px solid #dee2e6;
+            border-radius: 12px 12px 0 0 !important;
+            font-weight: 600;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+        
+        .status-online {
+            background-color: #28a745;
+            box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+        }
+        
+        .status-offline {
+            background-color: #dc3545;
+            box-shadow: 0 0 8px rgba(220, 53, 69, 0.4);
+        }
+        
+        .stats-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        
+        .stats-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .stats-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin: 1rem 0;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: #6c757d;
+        }
+        
+        .server-select {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 8px;
+            padding: 0.5rem 1.5rem;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .refresh-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+        
+        .metric-icon {
+            font-size: 1.2rem;
+            margin-right: 8px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="dashboard-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h1 class="mb-0">
+                        <i class="fas fa-chart-line me-3"></i>
+                        Статистика VPN Серверов
+                    </h1>
+                    <p class="mb-0 mt-2 opacity-75">Мониторинг в реальном времени</p>
+                    <div class="navigation">
+                        <a href="/stats" class="nav-link">📊 Статистика</a>
+                        <a href="/keys" class="nav-link">🔑 Ключи</a>
+                    </div>
+                </div>
+                <div class="col-md-6 text-end">
+                    <div class="d-flex justify-content-end align-items-center">
+                        <select id="serverSelect" class="server-select me-3">
+                            <option value="">Все серверы</option>
+                        </select>
+                        <button id="refreshBtn" class="btn refresh-btn">
+                            <i class="fas fa-sync-alt me-2"></i>
+                            Обновить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <!-- Общая статистика -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-value" id="totalServers">-</div>
+                    <div class="stats-label">
+                        <i class="fas fa-server metric-icon"></i>
+                        Всего серверов
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-value text-success" id="onlineServers">-</div>
+                    <div class="stats-label">
+                        <i class="fas fa-check-circle metric-icon"></i>
+                        Онлайн
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-value" id="avgCpu">-</div>
+                    <div class="stats-label">
+                        <i class="fas fa-microchip metric-icon"></i>
+                        Средний CPU (%)
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card">
+                    <div class="stats-value" id="avgLatency">-</div>
+                    <div class="stats-label">
+                        <i class="fas fa-clock metric-icon"></i>
+                        Средняя латентность (мс)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Графики -->
+        <div class="row">
+            <!-- CPU Usage -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-microchip me-2"></i>
+                        Использование CPU
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="cpuChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory Usage -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-memory me-2"></i>
+                        Использование памяти
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="memoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bandwidth -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-exchange-alt me-2"></i>
+                        Пропускная способность
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="bandwidthChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latency -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-clock me-2"></i>
+                        Латентность
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="latencyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Connections -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-link me-2"></i>
+                        Активные соединения
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="connectionsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Packet Loss -->
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Потери пакетов
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="packetLossChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Список серверов -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="fas fa-list me-2"></i>
+                        Текущее состояние серверов
+                    </div>
+                    <div class="card-body">
+                        <div id="serversTable" class="table-responsive">
+                            <div class="loading">
+                                <i class="fas fa-spinner fa-spin"></i>
+                                Загрузка данных...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Глобальные переменные
+        let charts = {};
+        let updateInterval;
+        const COLORS = [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', 
+            '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+        ];
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCharts();
+            loadServerList();
+            loadStatsData();
+            startAutoUpdate();
+
+            // Обработчики событий
+            document.getElementById('refreshBtn').addEventListener('click', function() {
+                loadStatsData();
+                loadCurrentStats();
+            });
+
+            document.getElementById('serverSelect').addEventListener('change', function() {
+                loadStatsData();
+            });
+        });
+
+        // Инициализация графиков
+        function initializeCharts() {
+            const chartOptions = {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        type: 'time',
+                        time: {
+                            displayFormats: {
+                                minute: 'HH:mm',
+                                hour: 'HH:mm'
+                            }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            };
+
+            // CPU Chart
+            charts.cpu = new Chart(document.getElementById('cpuChart'), {
+                type: 'line',
+                data: {datasets: []},
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Memory Chart
+            charts.memory = new Chart(document.getElementById('memoryChart'), {
+                type: 'line',
+                data: {datasets: []},
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Bandwidth Chart
+            charts.bandwidth = new Chart(document.getElementById('bandwidthChart'), {
+                type: 'line',
+                data: {datasets: []},
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' Мбит/с';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Latency Chart
+            charts.latency = new Chart(document.getElementById('latencyChart'), {
+                type: 'line',
+                data: {datasets: []},
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + ' мс';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Connections Chart
+            charts.connections = new Chart(document.getElementById('connectionsChart'), {
+                type: 'line',
+                data: {datasets: []},
+                options: chartOptions
+            });
+
+            // Packet Loss Chart
+            charts.packetLoss = new Chart(document.getElementById('packetLossChart'), {
+                type: 'line',
+                data: {datasets: []},
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        ...chartOptions.scales,
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Загрузка списка серверов
+        async function loadServerList() {
+            try {
+                const response = await fetch('/api/stats/servers');
+                const data = await response.json();
+                
+                const select = document.getElementById('serverSelect');
+                select.innerHTML = '<option value="">Все серверы</option>';
+                
+                data.servers.forEach(server => {
+                    const option = document.createElement('option');
+                    option.value = server.server_id;
+                    option.textContent = server.name;
+                    if (!server.is_online) {
+                        option.textContent += ' (оффлайн)';
+                    }
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Ошибка загрузки списка серверов:', error);
+            }
+        }
+
+        // Загрузка данных для графиков
+        async function loadStatsData() {
+            try {
+                const serverId = document.getElementById('serverSelect').value;
+                const url = serverId ? 
+                    `/api/stats/data?server_id=${serverId}&hours=24` : 
+                    '/api/stats/data?hours=24';
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                updateCharts(data.servers_data);
+                updateSummaryStats(data);
+                
+            } catch (error) {
+                console.error('Ошибка загрузки данных статистики:', error);
+            }
+        }
+
+        // Загрузка текущей статистики
+        async function loadCurrentStats() {
+            try {
+                const response = await fetch('/api/stats/current');
+                const data = await response.json();
+                
+                updateServersTable(data.current_stats);
+                updateSummaryNumbers(data);
+                
+            } catch (error) {
+                console.error('Ошибка загрузки текущей статистики:', error);
+            }
+        }
+
+        // Обновление графиков
+        function updateCharts(serversData) {
+            const datasets = {
+                cpu: [],
+                memory: [],
+                bandwidth: [],
+                latency: [],
+                connections: [],
+                packetLoss: []
+            };
+
+            serversData.forEach((server, index) => {
+                const color = COLORS[index % COLORS.length];
+                const timeData = server.timestamps.map((time, i) => ({
+                    x: new Date(time),
+                    y: server.cpu_data[i]
+                }));
+
+                // CPU
+                datasets.cpu.push({
+                    label: server.server_id,
+                    data: server.timestamps.map((time, i) => ({
+                        x: new Date(time),
+                        y: server.cpu_data[i]
+                    })),
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    fill: false
+                });
+
+                // Memory
+                datasets.memory.push({
+                    label: server.server_id,
+                    data: server.timestamps.map((time, i) => ({
+                        x: new Date(time),
+                        y: server.memory_data[i]
+                    })),
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    fill: false
+                });
+
+                // Bandwidth (RX и TX)
+                datasets.bandwidth.push(
+                    {
+                        label: `${server.server_id} (RX)`,
+                        data: server.timestamps.map((time, i) => ({
+                            x: new Date(time),
+                            y: server.bandwidth_rx_data[i]
+                        })),
+                        borderColor: color,
+                        backgroundColor: color + '20',
+                        fill: false
+                    },
+                    {
+                        label: `${server.server_id} (TX)`,
+                        data: server.timestamps.map((time, i) => ({
+                            x: new Date(time),
+                            y: server.bandwidth_tx_data[i]
+                        })),
+                        borderColor: color,
+                        backgroundColor: color + '40',
+                        borderDash: [5, 5],
+                        fill: false
+                    }
+                );
+
+                // Latency (P50 и P95)
+                datasets.latency.push(
+                    {
+                        label: `${server.server_id} (P50)`,
+                        data: server.timestamps.map((time, i) => ({
+                            x: new Date(time),
+                            y: server.latency_p50_data[i]
+                        })),
+                        borderColor: color,
+                        backgroundColor: color + '20',
+                        fill: false
+                    },
+                    {
+                        label: `${server.server_id} (P95)`,
+                        data: server.timestamps.map((time, i) => ({
+                            x: new Date(time),
+                            y: server.latency_p95_data[i]
+                        })),
+                        borderColor: color,
+                        backgroundColor: color + '40',
+                        borderDash: [5, 5],
+                        fill: false
+                    }
+                );
+
+                // Connections
+                datasets.connections.push({
+                    label: server.server_id,
+                    data: server.timestamps.map((time, i) => ({
+                        x: new Date(time),
+                        y: server.active_conns_data[i]
+                    })),
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    fill: false
+                });
+
+                // Packet Loss
+                datasets.packetLoss.push({
+                    label: server.server_id,
+                    data: server.timestamps.map((time, i) => ({
+                        x: new Date(time),
+                        y: server.packet_loss_data[i]
+                    })),
+                    borderColor: color,
+                    backgroundColor: color + '20',
+                    fill: false
+                });
+            });
+
+            // Обновляем все графики
+            Object.keys(datasets).forEach(chartName => {
+                if (charts[chartName]) {
+                    charts[chartName].data.datasets = datasets[chartName];
+                    charts[chartName].update();
+                }
+            });
+        }
+
+        // Обновление сводной статистики
+        function updateSummaryStats(data) {
+            document.getElementById('totalServers').textContent = data.total_servers;
+        }
+
+        // Обновление числовых показателей
+        function updateSummaryNumbers(data) {
+            document.getElementById('totalServers').textContent = data.total_servers;
+            document.getElementById('onlineServers').textContent = data.online_servers;
+            
+            // Вычисляем средние значения
+            const avgCpu = data.current_stats.reduce((sum, s) => sum + s.cpu_usage_pct, 0) / data.current_stats.length;
+            const avgLatency = data.current_stats.reduce((sum, s) => sum + s.latency_p50_ms, 0) / data.current_stats.length;
+            
+            document.getElementById('avgCpu').textContent = avgCpu.toFixed(1) + '%';
+            document.getElementById('avgLatency').textContent = avgLatency.toFixed(1);
+        }
+
+        // Обновление таблицы серверов
+        function updateServersTable(servers) {
+            const container = document.getElementById('serversTable');
+            
+            if (servers.length === 0) {
+                container.innerHTML = '<div class="text-center text-muted">Нет данных</div>';
+                return;
+            }
+
+            let html = `
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Сервер</th>
+                            <th>Статус</th>
+                            <th>CPU</th>
+                            <th>Память</th>
+                            <th>Пропускная способность</th>
+                            <th>Латентность</th>
+                            <th>Соединения</th>
+                            <th>Последнее обновление</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            servers.forEach(server => {
+                const statusClass = server.is_online ? 'status-online' : 'status-offline';
+                const statusText = server.is_online ? 'Онлайн' : 'Оффлайн';
+                const lastUpdate = new Date(server.last_update).toLocaleString('ru-RU');
+
+                html += `
+                    <tr>
+                        <td><strong>${server.server_id}</strong></td>
+                        <td>
+                            <span class="status-indicator ${statusClass}"></span>
+                            ${statusText}
+                        </td>
+                        <td>${server.cpu_usage_pct.toFixed(1)}%</td>
+                        <td>${server.memory_usage_pct.toFixed(1)}%</td>
+                        <td>
+                            <small class="text-muted">RX:</small> ${server.bandwidth_rx_mbps.toFixed(1)}<br>
+                            <small class="text-muted">TX:</small> ${server.bandwidth_tx_mbps.toFixed(1)}
+                        </td>
+                        <td>${server.latency_p50_ms.toFixed(1)} мс</td>
+                        <td>${server.active_connections}</td>
+                        <td><small>${lastUpdate}</small></td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        // Автоматическое обновление
+        function startAutoUpdate() {
+            updateInterval = setInterval(() => {
+                loadCurrentStats();
+                // Обновляем графики каждые 2 минуты
+                if (Math.floor(Date.now() / 1000) % 120 === 0) {
+                    loadStatsData();
+                }
+            }, 30000); // каждые 30 секунд
+        }
+
+        // Остановка автоматического обновления при уходе со страницы
+        window.addEventListener('beforeunload', () => {
+            if (updateInterval) {
+                clearInterval(updateInterval);
+            }
+        });
+    </script>
+</body>
+</html>

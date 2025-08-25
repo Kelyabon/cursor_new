@@ -1,0 +1,26 @@
+[Unit]
+Description=VPN Agent (heartbeat + ключи)
+Wants=network-online.target
+After=network-online.target xray.service
+
+[Service]
+Type=simple
+EnvironmentFile=/etc/vpn-agent/agent.env
+Environment=VIRTUAL_ENV=/opt/vpn-agent/venv
+Environment=PATH=/opt/vpn-agent/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+ExecStart=/opt/vpn-agent/venv/bin/python /usr/local/bin/vpn_agent.py
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=full
+ReadWritePaths=/etc/xray
+CapabilityBoundingSet=
+AmbientCapabilities=
+LimitNOFILE=1048576
+
+[Install]
+WantedBy=multi-user.target
+
+

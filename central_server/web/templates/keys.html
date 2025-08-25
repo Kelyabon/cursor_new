@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Управление ключами VPN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .card h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #007AFF;
+            box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            text-align: center;
+            min-width: 140px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #007AFF, #5856D6);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 122, 255, 0.3);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #FF3B30, #FF6B6B);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(255, 59, 48, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .servers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .server-item {
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .server-item:hover {
+            border-color: #007AFF;
+            transform: translateY(-1px);
+        }
+
+        .server-item.selected {
+            border-color: #007AFF;
+            background: rgba(0, 122, 255, 0.05);
+        }
+
+        .server-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-online {
+            background: #34C759;
+        }
+
+        .status-offline {
+            background: #FF3B30;
+        }
+
+        .server-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .server-id {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .alert-success {
+            background: rgba(52, 199, 89, 0.1);
+            color: #34C759;
+            border: 1px solid rgba(52, 199, 89, 0.2);
+        }
+
+        .alert-error {
+            background: rgba(255, 59, 48, 0.1);
+            color: #FF3B30;
+            border: 1px solid rgba(255, 59, 48, 0.2);
+        }
+
+        .alert-info {
+            background: rgba(0, 122, 255, 0.1);
+            color: #007AFF;
+            border: 1px solid rgba(0, 122, 255, 0.2);
+        }
+
+        .tasks-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .task-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e1e5e9;
+            transition: background 0.2s;
+        }
+
+        .task-item:hover {
+            background: rgba(0, 122, 255, 0.02);
+        }
+
+        .task-info {
+            flex: 1;
+        }
+
+        .task-type {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .task-details {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        .task-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: rgba(255, 149, 0, 0.1);
+            color: #FF9500;
+        }
+
+        .status-delivered {
+            background: rgba(0, 122, 255, 0.1);
+            color: #007AFF;
+        }
+
+        .status-done {
+            background: rgba(52, 199, 89, 0.1);
+            color: #34C759;
+        }
+
+        .status-failed {
+            background: rgba(255, 59, 48, 0.1);
+            color: #FF3B30;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e1e5e9;
+            border-top: 3px solid #007AFF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .navigation {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 500;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .servers-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .btn {
+                width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Управление ключами</h1>
+            <p>Добавление и удаление ключей на VPN серверах</p>
+        </div>
+
+        <div class="navigation">
+            <a href="/stats" class="nav-link">📊 Статистика</a>
+            <a href="/keys" class="nav-link">🔑 Ключи</a>
+        </div>
+
+        <!-- Алерты -->
+        <div id="alerts"></div>
+
+        <!-- Выбор сервера -->
+        <div class="card">
+            <h2>🖥️ Выберите сервер</h2>
+            <div id="servers-grid" class="servers-grid">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Загрузка серверов...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Добавление ключа -->
+        <div class="card">
+            <h2>➕ Добавить ключ</h2>
+            <form id="add-key-form">
+                <div class="form-group">
+                    <label for="user-email">Email пользователя *</label>
+                    <input type="email" id="user-email" name="user_email" class="form-control" required
+                           placeholder="user@example.com">
+                </div>
+                <div class="form-group">
+                    <label for="custom-key-id">Пользовательский ключ (необязательно)</label>
+                    <input type="text" id="custom-key-id" name="custom_key_id" class="form-control"
+                           placeholder="Оставьте пустым для автогенерации UUID">
+                </div>
+                <button type="submit" class="btn btn-primary" id="add-key-btn">Добавить ключ</button>
+            </form>
+        </div>
+
+        <!-- Удаление ключа -->
+        <div class="card">
+            <h2>🗑️ Удалить ключ</h2>
+            <form id="remove-key-form">
+                <div class="form-group">
+                    <label for="remove-key-id">UUID ключа *</label>
+                    <input type="text" id="remove-key-id" name="key_id" class="form-control" required
+                           placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx">
+                </div>
+                <button type="submit" class="btn btn-danger" id="remove-key-btn">Удалить ключ</button>
+            </form>
+        </div>
+
+        <!-- Статус задач -->
+        <div class="card">
+            <h2>📋 Последние задачи</h2>
+            <div id="tasks-list" class="tasks-list">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Загрузка задач...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedServerId = null;
+        let servers = [];
+
+        // Утилиты
+        function showAlert(message, type = 'info') {
+            const alertsContainer = document.getElementById('alerts');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            
+            alertsContainer.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
+        }
+
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleString('ru-RU');
+        }
+
+        // Загрузка серверов
+        async function loadServers() {
+            try {
+                const response = await fetch('/api/keys/servers');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Ошибка загрузки серверов');
+                }
+                
+                servers = data.servers;
+                renderServers();
+            } catch (error) {
+                showAlert(`Ошибка загрузки серверов: ${error.message}`, 'error');
+                document.getElementById('servers-grid').innerHTML = 
+                    '<p style="text-align: center; color: #666;">Не удалось загрузить серверы</p>';
+            }
+        }
+
+        // Отображение серверов
+        function renderServers() {
+            const grid = document.getElementById('servers-grid');
+            
+            if (servers.length === 0) {
+                grid.innerHTML = '<p style="text-align: center; color: #666;">Нет доступных серверов</p>';
+                return;
+            }
+
+            grid.innerHTML = servers.map(server => `
+                <div class="server-item" data-server-id="${server.server_id}" onclick="selectServer('${server.server_id}')">
+                    <div class="server-status">
+                        <div class="status-dot ${server.is_online ? 'status-online' : 'status-offline'}"></div>
+                        <span class="server-name">${server.name}</span>
+                    </div>
+                    <div class="server-id">${server.server_id}</div>
+                    <div style="font-size: 0.8rem; color: #888; margin-top: 4px;">
+                        ${server.is_online ? '🟢 Онлайн' : '🔴 Офлайн'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Выбор сервера
+        function selectServer(serverId) {
+            selectedServerId = serverId;
+            
+            document.querySelectorAll('.server-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            document.querySelector(`[data-server-id="${serverId}"]`).classList.add('selected');
+            
+            const selectedServer = servers.find(s => s.server_id === serverId);
+            showAlert(`Выбран сервер: ${selectedServer.name}`, 'info');
+        }
+
+        // Добавление ключа
+        document.getElementById('add-key-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!selectedServerId) {
+                showAlert('Пожалуйста, выберите сервер', 'error');
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            formData.append('server_id', selectedServerId);
+
+            const addBtn = document.getElementById('add-key-btn');
+            addBtn.disabled = true;
+            addBtn.textContent = 'Добавление...';
+
+            try {
+                const response = await fetch('/api/keys/add', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert(`Ключ успешно добавлен! ID: ${result.key_id}`, 'success');
+                    e.target.reset();
+                    loadTasks();
+                } else {
+                    throw new Error(result.detail || 'Ошибка добавления ключа');
+                }
+            } catch (error) {
+                showAlert(`Ошибка: ${error.message}`, 'error');
+            } finally {
+                addBtn.disabled = false;
+                addBtn.textContent = 'Добавить ключ';
+            }
+        });
+
+        // Удаление ключа
+        document.getElementById('remove-key-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!selectedServerId) {
+                showAlert('Пожалуйста, выберите сервер', 'error');
+                return;
+            }
+
+            const formData = new FormData(e.target);
+            formData.append('server_id', selectedServerId);
+
+            const removeBtn = document.getElementById('remove-key-btn');
+            removeBtn.disabled = true;
+            removeBtn.textContent = 'Удаление...';
+
+            try {
+                const response = await fetch('/api/keys/remove', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    showAlert(`Ключ успешно удален! ID: ${result.key_id}`, 'success');
+                    e.target.reset();
+                    loadTasks();
+                } else {
+                    throw new Error(result.detail || 'Ошибка удаления ключа');
+                }
+            } catch (error) {
+                showAlert(`Ошибка: ${error.message}`, 'error');
+            } finally {
+                removeBtn.disabled = false;
+                removeBtn.textContent = 'Удалить ключ';
+            }
+        });
+
+        // Загрузка задач
+        async function loadTasks() {
+            try {
+                const response = await fetch('/api/keys/tasks');
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Ошибка загрузки задач');
+                }
+                
+                renderTasks(data.tasks);
+            } catch (error) {
+                showAlert(`Ошибка загрузки задач: ${error.message}`, 'error');
+                document.getElementById('tasks-list').innerHTML = 
+                    '<p style="text-align: center; color: #666;">Не удалось загрузить задачи</p>';
+            }
+        }
+
+        // Отображение задач
+        function renderTasks(tasks) {
+            const tasksList = document.getElementById('tasks-list');
+            
+            if (tasks.length === 0) {
+                tasksList.innerHTML = '<p style="text-align: center; color: #666;">Нет задач</p>';
+                return;
+            }
+
+            tasksList.innerHTML = tasks.map(task => `
+                <div class="task-item">
+                    <div class="task-info">
+                        <div class="task-type">
+                            ${task.type === 'add_key' ? '➕ Добавление' : '🗑️ Удаление'} ключа
+                        </div>
+                        <div class="task-details">
+                            Сервер: ${task.server_id} | Ключ: ${task.key_id}
+                            ${task.email ? ` | Email: ${task.email}` : ''}
+                            <br>Создано: ${formatDate(task.created_at)}
+                        </div>
+                    </div>
+                    <div class="task-status status-${task.status}">
+                        ${task.status}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', () => {
+            loadServers();
+            loadTasks();
+            
+            // Обновление задач каждые 10 секунд
+            setInterval(loadTasks, 10000);
+        });
+    </script>
+</body>
+</html>
